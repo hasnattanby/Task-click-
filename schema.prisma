@@ -1,0 +1,181 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String            @id @default(uuid())
+  email             String            @unique
+  password          String
+  name              String
+  phone             String?
+  whatsapp          String?
+  country           String?
+  age               Int?
+  profileImage      String?
+  deviceId          String?           @unique
+  interests         String[]
+  role              Role              @default(WORKER)
+  isCompleteProfile Boolean           @default(false)
+  registrationDate  DateTime          @default(now())
+  sentMessages      Message[]         @relation("SentMessages")
+  receivedMessages  Message[]         @relation("ReceivedMessages")
+  notifications     Notification[]
+  createdOrders     Order[]           @relation("OrderCreator")
+  workedOrders      OrderWorker[]
+  earnings          Earning?
+  complaints        Complaint[]
+  withdrawRequests  WithdrawRequest[]
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  content    String
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
+  senderId   String
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  receiverId String
+  timestamp  DateTime @default(now())
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  user      User             @relation(fields: [userId], references: [id])
+  userId    String
+  type      NotificationType
+  message   String
+  link      String?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model Order {
+  id           String        @id @default(uuid())
+  title        String
+  description  String
+  orderType    OrderType
+  platform     String?
+  link         String?
+  workerCount  Int
+  ratePerWorker Float
+  totalBudget   Float
+  proofType    String?
+  instructions String?
+  creator      User          @relation("OrderCreator", fields: [creatorId], references: [id])
+  creatorId    String
+  status       OrderStatus   @default(PENDING)
+  workers      OrderWorker[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model OrderWorker {
+  id          String      @id @default(uuid())
+  order       Order       @relation(fields: [orderId], references: [id])
+  orderId     String
+  worker      User        @relation(fields: [workerId], references: [id])
+  workerId    String
+  proof       String?
+  status      ProofStatus @default(PENDING)
+  completedAt DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Earning {
+  id               String  @id @default(uuid())
+  user             User    @relation(fields: [userId], references: [id])
+  userId           String  @unique
+  totalEarned      Float   @default(0)
+  pendingBalance   Float   @default(0)
+  approvedBalance  Float   @default(0)
+  withdrawnAmount  Float   @default(0)
+  remainingBalance Float   @default(0)
+}
+
+model Complaint {
+  id          String   @id @default(uuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  subject     String
+  description String
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model WithdrawRequest {
+  id          String          @id @default(uuid())
+  user        User            @relation(fields: [userId], references: [id])
+  userId      String
+  amount      Float
+  method      PaymentMethod
+  accountInfo String
+  status      WithdrawStatus  @default(PENDING)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+enum Role {
+  ADMIN
+  WORKER
+  ORDER_GIVER
+}
+
+enum OrderType {
+  DIGITAL_MARKETING
+  APP
+  WEB_DEVELOPMENT
+}
+
+enum OrderStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum ProofStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum NotificationType {
+  NEW_ORDER
+  PROOF_STATUS
+  PROOF_SUBMITTED
+  ORDER_COMPLETED
+  POLICY_UPDATE
+  COMPLAINT_RESPONSE
+  PAYMENT_UPDATE
+  WITHDRAW_STATUS
+  RANKING_UPDATE
+  REFERRAL_BONUS
+  MAINTENANCE
+  URGENT_NOTICE
+  ADMIN_NOTIFICATION
+}
+
+enum PaymentMethod {
+  PAYPAL
+  STRIPE
+  WISE
+}
+
+enum WithdrawStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
