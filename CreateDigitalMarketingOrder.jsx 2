@@ -1,0 +1,438 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
+import { FaLink, FaUsers, FaDollarSign, FaRegImage, FaInfoCircle, FaArrowLeft, FaCheck } from 'react-icons/fa';
+
+const CreateDigitalMarketingOrder = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    orderType: 'DIGITAL_MARKETING',
+    platform: '',
+    link: '',
+    workerCount: 10,
+    ratePerWorker: 0.05,
+    proofType: 'SCREENSHOT', // SCREENSHOT, USERNAME, VIDEO
+    instructions: ''
+  });
+  
+  const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [totalBudget, setTotalBudget] = useState(0);
+  
+  // Calculate total budget when worker count or rate changes
+  useEffect(() => {
+    const subtotal = formData.workerCount * formData.ratePerWorker;
+    const adminFee = subtotal * 0.02; // 2% admin fee
+    const total = subtotal + adminFee;
+    setTotalBudget(total.toFixed(2));
+  }, [formData.workerCount, formData.ratePerWorker]);
+  
+  // Handle input changes
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  
+  // Handle worker count change
+  const handleWorkerCountChange = (e) => {
+    const value = parseInt(e.target.value);
+    if (value >= 5 && value <= 1000) {
+      setFormData(prev => ({
+        ...prev,
+        workerCount: value
+      }));
+    }
+  };
+  
+  // Handle rate per worker change
+  const handleRateChange = (e) => {
+    const value = parseFloat(e.target.value);
+    if (value >= 0.01 && value <= 10) {
+      setFormData(prev => ({
+        ...prev,
+        ratePerWorker: value
+      }));
+    }
+  };
+  
+  // Move to next step
+  const nextStep = () => {
+    // Validate current step
+    if (step === 1) {
+      if (!formData.title || !formData.platform || !formData.link) {
+        toast.error('অনুগ্রহ করে সকল প্রয়োজনীয় তথ্য পূরণ করুন');
+        return;
+      }
+    }
+    
+    setStep(prev => prev + 1);
+  };
+  
+  // Move to previous step
+  const prevStep = () => {
+    setStep(prev => prev - 1);
+  };
+  
+  // Submit order
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    try {
+      // Add payment processing here if needed
+      
+      // Create order
+      const response = await axios.post('/api/orders', formData);
+      
+      toast.success('অর্ডার সফলভাবে তৈরি করা হয়েছে');
+      navigate(`/orders/${response.data.order.id}`);
+    } catch (error) {
+      console.error('Error creating order:', error);
+      toast.error(error.response?.data?.message || 'অর্ডার তৈরি করতে সমস্যা হয়েছে');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  return (
+    <div className="container mx-auto px-4 py-6 pb-20">
+      <div className="max-w-3xl mx-auto">
+        <div className="flex items-center mb-6">
+          <button 
+            onClick={() => navigate(-1)}
+            className="mr-4 text-gray-600 hover:text-indigo-600"
+          >
+            <FaArrowLeft />
+          </button>
+          <h1 className="text-2xl font-bold text-gray-800">ডিজিটাল মার্কেটিং অর্ডার তৈরি করুন</h1>
+        </div>
+        
+        {/* Progress Steps */}
+        <div className="flex mb-8">
+          <div className={`flex-1 pb-2 ${step >= 1 ? 'border-b-2 border-indigo-600' : 'border-b border-gray-300'}`}>
+            <div className="flex items-center">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'}`}>
+                1
+              </div>
+              <span className="ml-2 text-sm font-medium text-gray-700">অর্ডার তথ্য</span>
+            </div>
+          </div>
+          <div className={`flex-1 pb-2 ${step >= 2 ? 'border-b-2 border-indigo-600' : 'border-b border-gray-300'}`}>
+            <div className="flex items-center">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'}`}>
+                2
+              </div>
+              <span className="ml-2 text-sm font-medium text-gray-700">বাজেট এবং ওয়ার্কার</span>
+            </div>
+          </div>
+          <div className={`flex-1 pb-2 ${step >= 3 ? 'border-b-2 border-indigo-600' : 'border-b border-gray-300'}`}>
+            <div className="flex items-center">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 3 ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'}`}>
+                3
+              </div>
+              <span className="ml-2 text-sm font-medium text-gray-700">নির্দেশনা এবং পেমেন্ট</span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <form onSubmit={handleSubmit}>
+            {/* Step 1: Order Details */}
+            {step === 1 && (
+              <div className="p-6">
+                <h2 className="text-lg font-medium text-gray-800 mb-4">অর্ডার বিবরণ</h2>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+                      অর্ডারের শিরোনাম <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="title"
+                      name="title"
+                      value={formData.title}
+                      onChange={handleChange}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="অর্ডারের শিরোনাম লিখুন"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="platform" className="block text-sm font-medium text-gray-700 mb-1">
+                      প্ল্যাটফর্ম <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      id="platform"
+                      name="platform"
+                      value={formData.platform}
+                      onChange={handleChange}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      required
+                    >
+                      <option value="">প্ল্যাটফর্ম নির্বাচন করুন</option>
+                      <option value="YouTube">YouTube</option>
+                      <option value="Facebook">Facebook</option>
+                      <option value="Instagram">Instagram</option>
+                      <option value="TikTok">TikTok</option>
+                      <option value="Twitter">Twitter</option>
+                      <option value="Website">Website</option>
+                      <option value="Other">অন্যান্য</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="link" className="block text-sm font-medium text-gray-700 mb-1">
+                      লিংক <span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex items-center">
+                      <span className="inline-flex items-center justify-center h-10 w-10 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
+                        <FaLink />
+                      </span>
+                      <input
+                        type="text"
+                        id="link"
+                        name="link"
+                        value={formData.link}
+                        onChange={handleChange}
+                        className="flex-1 h-10 p-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="কাজের লিংক দিন (যেমন: YouTube ভিডিও, Facebook পোস্ট)"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                      বিবরণ
+                    </label>
+                    <textarea
+                      id="description"
+                      name="description"
+                      value={formData.description}
+                      onChange={handleChange}
+                      rows="3"
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="অর্ডার সম্পর্কে বিস্তারিত লিখুন..."
+                    ></textarea>
+                  </div>
+                </div>
+                
+                <div className="mt-6">
+                  <button
+                    type="button"
+                    onClick={nextStep}
+                    className="w-full py-2 px-4 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    পরবর্তী ধাপ
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {/* Step 2: Budget and Workers */}
+            {step === 2 && (
+              <div className="p-6">
+                <h2 className="text-lg font-medium text-gray-800 mb-4">বাজেট এবং ওয়ার্কার</h2>
+                
+                <div className="space-y-4">
+                  <div className="bg-indigo-50 p-4 rounded-md mb-4">
+                    <div className="flex items-center">
+                      <FaInfoCircle className="text-indigo-600 mr-2" />
+                      <p className="text-sm text-indigo-800">
+                        ওয়ার্কার সংখ্যা এবং প্রতি ওয়ার্কারের রেট পরিবর্তন করে আপনার বাজেট সামঞ্জস্য করুন।
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="workerCount" className="block text-sm font-medium text-gray-700 mb-1">
+                      ওয়ার্কার সংখ্যা <span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex items-center">
+                      <span className="inline-flex items-center justify-center h-10 w-10 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
+                        <FaUsers />
+                      </span>
+                      <input
+                        type="number"
+                        id="workerCount"
+                        name="workerCount"
+                        value={formData.workerCount}
+                        onChange={handleWorkerCountChange}
+                        min="5"
+                        max="1000"
+                        className="flex-1 h-10 p-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        required
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">সর্বনিম্ন 5, সর্বোচ্চ 1000 জন ওয়ার্কার</p>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="ratePerWorker" className="block text-sm font-medium text-gray-700 mb-1">
+                      প্রতি ওয়ার্কার রেট (USD) <span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex items-center">
+                      <span className="inline-flex items-center justify-center h-10 w-10 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
+                        <FaDollarSign />
+                      </span>
+                      <input
+                        type="number"
+                        id="ratePerWorker"
+                        name="ratePerWorker"
+                        value={formData.ratePerWorker}
+                        onChange={handleRateChange}
+                        min="0.01"
+                        max="10"
+                        step="0.01"
+                        className="flex-1 h-10 p-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        required
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">প্রতি ওয়ার্কারকে কত টাকা দিতে চান (USD)</p>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="proofType" className="block text-sm font-medium text-gray-700 mb-1">
+                      প্রুফ টাইপ <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      id="proofType"
+                      name="proofType"
+                      value={formData.proofType}
+                      onChange={handleChange}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      required
+                    >
+                      <option value="SCREENSHOT">স্ক্রিনশট</option>
+                      <option value="USERNAME">ইউজারনেম/ইমেইল</option>
+                      <option value="VIDEO">ভিডিও রেকর্ডিং</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">ওয়ার্কারদের কি ধরনের প্রুফ জমা দিতে হবে</p>
+                  </div>
+                  
+                  <div className="mt-6 p-4 bg-gray-50 rounded-md">
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm text-gray-600">সাবটোটাল:</span>
+                      <span className="text-sm font-medium">${(formData.workerCount * formData.ratePerWorker).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm text-gray-600">অ্যাডমিন ফি (2%):</span>
+                      <span className="text-sm font-medium">${(formData.workerCount * formData.ratePerWorker * 0.02).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t border-gray-200">
+                      <span className="text-base font-medium text-gray-700">মোট বাজেট:</span>
+                      <span className="text-base font-bold text-indigo-600">${totalBudget}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-6 flex justify-between">
+                  <button
+                    type="button"
+                    onClick={prevStep}
+                    className="py-2 px-4 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  >
+                    আগের ধাপ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={nextStep}
+                    className="py-2 px-4 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    পরবর্তী ধাপ
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {/* Step 3: Instructions and Payment */}
+            {step === 3 && (
+              <div className="p-6">
+                <h2 className="text-lg font-medium text-gray-800 mb-4">নির্দেশনা এবং পেমেন্ট</h2>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="instructions" className="block text-sm font-medium text-gray-700 mb-1">
+                      বিস্তারিত নির্দেশনা
+                    </label>
+                    <textarea
+                      id="instructions"
+                      name="instructions"
+                      value={formData.instructions}
+                      onChange={handleChange}
+                      rows="4"
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="ওয়ার্কারদের জন্য বিস্তারিত নির্দেশনা লিখুন..."
+                    ></textarea>
+                    <p className="text-xs text-gray-500 mt-1">কাজ কিভাবে করতে হবে তার নির্দেশনা দিন</p>
+                  </div>
+                  
+                  <div className="mt-6 p-4 bg-gray-50 rounded-md">
+                    <h3 className="text-sm font-medium text-gray-700 mb-3">অর্ডার সারাংশ:</h3>
+                    
+                    <div className="space-y-2 mb-4">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">শিরোনাম:</span>
+                        <span className="text-sm font-medium text-right">{formData.title}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">প্ল্যাটফর্ম:</span>
+                        <span className="text-sm font-medium">{formData.platform}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">ওয়ার্কার সংখ্যা:</span>
+                        <span className="text-sm font-medium">{formData.workerCount} জন</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">প্রতি ওয়ার্কার রেট:</span>
+                        <span className="text-sm font-medium">${formData.ratePerWorker}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">প্রুফ টাইপ:</span>
+                        <span className="text-sm font-medium">
+                          {formData.proofType === 'SCREENSHOT' ? 'স্ক্রিনশট' : 
+                           formData.proofType === 'USERNAME' ? 'ইউজারনেম/ইমেইল' : 'ভিডিও রেকর্ডিং'}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="pt-3 border-t border-gray-200">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm font-medium text-gray-700">মোট বাজেট:</span>
+                        <span className="text-sm font-bold text-indigo-600">${totalBudget}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6 p-4 bg-yellow-50 rounded-md">
+                    <div className="flex items-start">
+                      <FaInfoCircle className="text-yellow-600 mt-1 mr-2 flex-shrink-0" />
+                      <p className="text-sm text-yellow-800">
+                        অর্ডার জমা দেওয়ার পর, অ্যাডমিন অনুমোদনের জন্য অপেক্ষা করুন। অনুমোদিত হলে আপনার অর্ডার লাইভ হবে।
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-6 flex justify-between">
+                  <button
+                    type="button"
+                    onClick={prevStep}
+                    className="py-2 px-4 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  >
+                    আগের ধাপ
+                  </button>
+                  <button
+                    type="submit"
+                  
