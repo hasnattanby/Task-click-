@@ -1,0 +1,119 @@
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useNotification } from '../../context/NotificationContext';
+import { format } from 'date-fns';
+import { FaBell, FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaNewspaper, FaDollarSign, FaTrophy, FaUsers, FaEnvelope } from 'react-icons/fa';
+
+const NotificationPage = () => {
+  const { notifications, loading, fetchNotifications, markAsRead, markAllAsRead } = useNotification();
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+  
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'NEW_ORDER':
+        return <FaNewspaper className="text-blue-500" />;
+      case 'PROOF_STATUS':
+        return <FaCheckCircle className="text-green-500" />;
+      case 'PROOF_SUBMITTED':
+        return <FaCheckCircle className="text-purple-500" />;
+      case 'ORDER_COMPLETED':
+        return <FaCheckCircle className="text-green-500" />;
+      case 'POLICY_UPDATE':
+        return <FaExclamationTriangle className="text-yellow-500" />;
+      case 'COMPLAINT_RESPONSE':
+        return <FaEnvelope className="text-red-500" />;
+      case 'PAYMENT_UPDATE':
+        return <FaDollarSign className="text-green-500" />;
+      case 'WITHDRAW_STATUS':
+        return <FaDollarSign className="text-purple-500" />;
+      case 'RANKING_UPDATE':
+        return <FaTrophy className="text-yellow-500" />;
+      case 'REFERRAL_BONUS':
+        return <FaUsers className="text-green-500" />;
+      case 'MAINTENANCE':
+        return <FaExclamationTriangle className="text-orange-500" />;
+      case 'URGENT_NOTICE':
+        return <FaExclamationTriangle className="text-red-500" />;
+      case 'ADMIN_NOTIFICATION':
+        return <FaBell className="text-indigo-500" />;
+      default:
+        return <FaBell className="text-gray-500" />;
+    }
+  };
+  
+  const handleNotificationClick = (notification) => {
+    if (!notification.read) {
+      markAsRead(notification.id);
+    }
+    
+    if (notification.link) {
+      navigate(notification.link);
+    }
+  };
+  
+  return (
+    <div className="container mx-auto px-4 py-6 pb-20">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">নোটিফিকেশন</h1>
+        
+        {notifications.length > 0 && (
+          <button 
+            onClick={markAllAsRead}
+            className="text-sm text-indigo-600 hover:text-indigo-800"
+          >
+            সবগুলো পঠিত হিসেবে চিহ্নিত করুন
+          </button>
+        )}
+      </div>
+      
+      {loading ? (
+        <div className="flex justify-center py-10">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-indigo-500"></div>
+        </div>
+      ) : notifications.length === 0 ? (
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <div className="inline-block p-4 bg-gray-100 rounded-full mb-4">
+            <FaBell className="text-3xl text-gray-400" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-700 mb-2">কোন নোটিফিকেশন নেই</h3>
+          <p className="text-gray-500">আপনার কোন নতুন নোটিফিকেশন নেই</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          {notifications.map((notification) => (
+            <div 
+              key={notification.id}
+              onClick={() => handleNotificationClick(notification)}
+              className={`p-4 border-b border-gray-100 flex cursor-pointer transition hover:bg-gray-50 ${!notification.read ? 'bg-indigo-50' : ''}`}
+            >
+              <div className="mr-4 mt-1">
+                <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+                  {getNotificationIcon(notification.type)}
+                </div>
+              </div>
+              <div className="flex-1">
+                <p className={`text-sm ${!notification.read ? 'font-medium' : 'text-gray-700'}`}>
+                  {notification.message}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {format(new Date(notification.createdAt), 'dd/MM/yyyy hh:mm a')}
+                </p>
+              </div>
+              {!notification.read && (
+                <div className="ml-2 flex-shrink-0">
+                  <span className="inline-block w-2 h-2 bg-indigo-600 rounded-full"></span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default NotificationPage;
